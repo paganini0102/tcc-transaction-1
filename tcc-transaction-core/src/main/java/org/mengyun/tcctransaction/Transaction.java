@@ -44,9 +44,9 @@ public class Transaction implements Serializable {
     }
 
     public Transaction(TransactionContext transactionContext) {
-        this.xid = transactionContext.getXid();
-        this.status = TransactionStatus.TRYING;
-        this.transactionType = TransactionType.BRANCH;
+        this.xid = transactionContext.getXid(); // 事务上下文的xid
+        this.status = TransactionStatus.TRYING; // 尝试中状态
+        this.transactionType = TransactionType.BRANCH; // 分支事务
     }
 
     public Transaction(TransactionType transactionType) {

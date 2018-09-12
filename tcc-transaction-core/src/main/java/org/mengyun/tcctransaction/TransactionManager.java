@@ -33,19 +33,31 @@ public class TransactionManager {
     public TransactionManager() {
     }
 
+    /**
+     * 发起根事务
+     * @return
+     */
     public Transaction begin() {
-
+    	// 创建根事务
         Transaction transaction = new Transaction(TransactionType.ROOT);
+        // 存储事务
         transactionRepository.create(transaction);
+        // 注册事务
         registerTransaction(transaction);
         return transaction;
     }
 
+    /**
+     * 传播发起事务分支
+     * @param transactionContext
+     * @return
+     */
     public Transaction propagationNewBegin(TransactionContext transactionContext) {
-
+    	// 创建分支事务
         Transaction transaction = new Transaction(transactionContext);
+        // 存储事务
         transactionRepository.create(transaction);
-
+        // 注册事务
         registerTransaction(transaction);
         return transaction;
     }
@@ -158,14 +170,17 @@ public class TransactionManager {
         return transactions != null && !transactions.isEmpty();
     }
 
-
+    /**
+     * 注册事务到当前线程事务队列
+     * @param transaction
+     */
     private void registerTransaction(Transaction transaction) {
 
         if (CURRENT.get() == null) {
             CURRENT.set(new LinkedList<Transaction>());
         }
 
-        CURRENT.get().push(transaction);
+        CURRENT.get().push(transaction); // 添加到头部
     }
 
     public void cleanAfterCompletion(Transaction transaction) {
