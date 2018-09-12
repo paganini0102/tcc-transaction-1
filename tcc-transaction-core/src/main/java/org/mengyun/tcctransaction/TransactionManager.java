@@ -112,10 +112,11 @@ public class TransactionManager {
     }
 
     public void rollback(boolean asyncRollback) {
-
+    	// 获取事务
         final Transaction transaction = getCurrentTransaction();
+        // 设置事务状态为CANCELLING
         transaction.changeStatus(TransactionStatus.CANCELLING);
-
+        // 更新事务
         transactionRepository.update(transaction);
 
         if (asyncRollback) {
@@ -132,7 +133,7 @@ public class TransactionManager {
                 throw new CancellingException(rollbackException);
             }
         } else {
-
+        	
             rollbackTransaction(transaction);
         }
     }
@@ -150,7 +151,9 @@ public class TransactionManager {
 
     private void rollbackTransaction(Transaction transaction) {
         try {
+        	// 回滚事务
             transaction.rollback();
+            // 删除事务
             transactionRepository.delete(transaction);
         } catch (Throwable rollbackException) {
             logger.warn("compensable transaction rollback failed, recovery job will try to rollback later.", rollbackException);
@@ -196,8 +199,11 @@ public class TransactionManager {
 
 
     public void enlistParticipant(Participant participant) {
+    	// 获取事务
         Transaction transaction = this.getCurrentTransaction();
+        // 添加参与者
         transaction.enlistParticipant(participant);
+        // 更新事务
         transactionRepository.update(transaction);
     }
 }
