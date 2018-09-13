@@ -45,7 +45,7 @@ public @interface Compensable {
             int position = getTransactionContextParamPosition(method.getParameterTypes());
 
             if (position >= 0) {
-                return (TransactionContext) args[position];
+                return (TransactionContext) args[position]; // 设置方法
             }
 
             return null;
@@ -56,10 +56,15 @@ public @interface Compensable {
 
             int position = getTransactionContextParamPosition(method.getParameterTypes());
             if (position >= 0) {
-                args[position] = transactionContext;
+                args[position] = transactionContext; // 设置方法参数
             }
         }
 
+        /**
+         * 获得事务上下文在方法参数里的位置
+         * @param parameterTypes
+         * @return
+         */
         public static int getTransactionContextParamPosition(Class<?>[] parameterTypes) {
 
             int position = -1;

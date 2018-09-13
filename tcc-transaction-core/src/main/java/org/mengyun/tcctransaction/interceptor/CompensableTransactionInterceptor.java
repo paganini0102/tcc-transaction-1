@@ -42,25 +42,26 @@ public class CompensableTransactionInterceptor {
     }
 
     public Object interceptCompensableMethod(ProceedingJoinPoint pjp) throws Throwable {
-
+    	// 获得带@Compensable注解的方法
         Method method = CompensableMethodUtils.getCompensableMethod(pjp);
 
         Compensable compensable = method.getAnnotation(Compensable.class);
         Propagation propagation = compensable.propagation();
+        // 获得事务上下文
         TransactionContext transactionContext = FactoryBuilder.factoryOf(compensable.transactionContextEditor()).getInstance().get(pjp.getTarget(), method, pjp.getArgs());
 
         boolean asyncConfirm = compensable.asyncConfirm();
 
         boolean asyncCancel = compensable.asyncCancel();
-
+        // 当前线程是否在事务中
         boolean isTransactionActive = transactionManager.isTransactionActive();
-
+        // 判断事务上下文是否合法
         if (!TransactionUtils.isLegalTransactionContext(isTransactionActive, propagation, transactionContext)) {
             throw new SystemException("no active compensable transaction while propagation is mandatory for method " + method.getName());
         }
-
+        // 计算方法类型
         MethodType methodType = CompensableMethodUtils.calculateMethodType(propagation, isTransactionActive, transactionContext);
-
+        // 处理
         switch (methodType) {
             case ROOT:
                 return rootMethodProceed(pjp, asyncConfirm, asyncCancel);
@@ -113,11 +114,14 @@ public class CompensableTransactionInterceptor {
 
             switch (TransactionStatus.valueOf(transactionContext.getStatus())) {
                 case TRYING:
+                	// 传播发起分支事务
                     transaction = transactionManager.propagationNewBegin(transactionContext);
                     return pjp.proceed();
                 case CONFIRMING:
                     try {
+                    	// 传播获取分支事务
                         transaction = transactionManager.propagationExistBegin(transactionContext);
+                        // 提交事务
                         transactionManager.commit(asyncConfirm);
                     } catch (NoExistedTransactionException excepton) {
                         //the transaction has been commit,ignore it.
@@ -126,7 +130,9 @@ public class CompensableTransactionInterceptor {
                 case CANCELLING:
 
                     try {
+                    	// 传播获取分支事务
                         transaction = transactionManager.propagationExistBegin(transactionContext);
+                        // 回滚事务
                         transactionManager.rollback(asyncCancel);
                     } catch (NoExistedTransactionException exception) {
                         //the transaction has been rollback,ignore it.
@@ -135,11 +141,11 @@ public class CompensableTransactionInterceptor {
             }
 
         } finally {
+        	// 将事务从当前线程事务队列移除
             transactionManager.cleanAfterCompletion(transaction);
         }
-
+        // 返回空值
         Method method = ((MethodSignature) (pjp.getSignature())).getMethod();
-
         return ReflectionUtils.getNullValue(method.getReturnType());
     }
 

@@ -62,11 +62,20 @@ public class TransactionManager {
         return transaction;
     }
 
+    /**
+     * 传播获取分支事务
+     * @param transactionContext
+     * @return
+     * @throws NoExistedTransactionException
+     */
     public Transaction propagationExistBegin(TransactionContext transactionContext) throws NoExistedTransactionException {
+    	// 查询事务
         Transaction transaction = transactionRepository.findByXid(transactionContext.getXid());
 
         if (transaction != null) {
+        	// 设置事务状态
             transaction.changeStatus(TransactionStatus.valueOf(transactionContext.getStatus()));
+            // 注册事务
             registerTransaction(transaction);
             return transaction;
         } else {
@@ -74,12 +83,16 @@ public class TransactionManager {
         }
     }
 
+    /**
+     * 提交事务
+     * @param asyncCommit
+     */
     public void commit(boolean asyncCommit) {
-
+    	// 获取事务
         final Transaction transaction = getCurrentTransaction();
-
+        // 设置事务状态为CONFIRMING
         transaction.changeStatus(TransactionStatus.CONFIRMING);
-
+        // 更新事务
         transactionRepository.update(transaction);
 
         if (asyncCommit) {
@@ -141,7 +154,9 @@ public class TransactionManager {
 
     private void commitTransaction(Transaction transaction) {
         try {
+        	// 提交事务
             transaction.commit();
+            // 删除事务
             transactionRepository.delete(transaction);
         } catch (Throwable commitException) {
             logger.warn("compensable transaction confirm failed, recovery job will try to confirm later.", commitException);
@@ -163,7 +178,7 @@ public class TransactionManager {
 
     public Transaction getCurrentTransaction() {
         if (isTransactionActive()) {
-            return CURRENT.get().peek();
+            return CURRENT.get().peek(); // 获得头部元素
         }
         return null;
     }
